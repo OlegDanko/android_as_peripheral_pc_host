@@ -1,0 +1,3 @@
+[submodule "deps/bit_read_write"]
+	path = deps/bit_read_write
+	url = git@github.com:OlegDanko/bit_read_write.git
