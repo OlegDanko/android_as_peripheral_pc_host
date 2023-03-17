@@ -1,3 +1,6 @@
 [submodule "deps/bit_read_write"]
 	path = deps/bit_read_write
 	url = git@github.com:OlegDanko/bit_read_write.git
+[submodule "deps/websocketpp"]
+	path = deps/websocketpp
+	url = https://github.com/zaphoyd/websocketpp

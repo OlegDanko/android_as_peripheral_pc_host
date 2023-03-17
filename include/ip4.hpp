@@ -13,7 +13,7 @@ struct ip4 {
     ip4() = default;
     ip4(uint8_t, uint8_t, uint8_t, uint8_t, uint16_t);
 
-    auto operator<=>(const ip4& other) const;
+//    auto operator<=>(const ip4& other) const;
     bool operator==(const ip4& other) const;
     bool operator!=(const ip4& other) const;
 };
@@ -23,12 +23,6 @@ std::ostream& operator<<(std::ostream& str, const ip4& ip);
 namespace std {
 template<>
 struct hash<ip4> {
-    size_t operator()(const ip4& ip) const {
-        union {
-            ip4 ip;
-            size_t s;
-        } u{.ip = ip};
-        return u.s;
-    }
+    size_t operator()(const ip4& ip) const;
 };
 }
