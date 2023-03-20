@@ -13,6 +13,7 @@ enum states {
 };
 
 class WebsocketppClient : public IWebSocketClient {
+
     using client_t = websocketpp::client<websocketpp::config::asio_client>;
     client_t client;
     websocketpp::connection_hdl handle;
