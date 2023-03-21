@@ -17,6 +17,7 @@ struct OpCodeCvt {
 
 std::unique_ptr<Class> gen_websocketpp_server(int port, remote_created_callback callback) {
     return std::make_unique<WebSocketppServer<server_t, conn_hdl_t, OpCodeCvt>>(
+        server_t(),
         port,
         callback,
         0,//websocketpp::log::alevel::all,

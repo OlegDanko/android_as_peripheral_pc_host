@@ -29,7 +29,7 @@ public:
             ServerWrapper(server_t& s, conn_hdl_t h) : server(s), hdl(h) {}
             bool send(const std::string& msg) override {
                 std::error_code ec;
-                server.send(hdl, msg,  OP_CODE_CVT::to_impl(OP_CODE_TEXT), ec);
+                server.send(hdl, msg, OP_CODE_CVT::to_impl(OP_CODE_TEXT), ec);
                 return ec ? false : true;
             }
             void close() override {
@@ -39,10 +39,11 @@ public:
         return std::make_unique<ServerWrapper>(server, hdl);
     }
 
-    WebSocketppServer(int port,
+    WebSocketppServer(server_t s,
+                      int port,
                       remote_created_callback on_remote_created,
                       int acces_channels = 0,
-                      int clear_acces_channels = 0) {
+                      int clear_acces_channels = 0) : server(std::move(s)) {
         server.set_access_channels(acces_channels);
         server.clear_access_channels(clear_acces_channels);
 

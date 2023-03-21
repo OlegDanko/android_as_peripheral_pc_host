@@ -4,3 +4,6 @@
 [submodule "deps/websocketpp"]
 	path = deps/websocketpp
 	url = https://github.com/zaphoyd/websocketpp
+[submodule "test/deps/FakeIt"]
+	path = test/deps/FakeIt
+	url = git@github.com:eranpeer/FakeIt.git

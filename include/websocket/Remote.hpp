@@ -8,6 +8,7 @@
 #include <atomic>
 #include <iostream>
 
+// This class is called 'Remote', but it's really an endpoint representation
 class Remote : public IConnectionProvider {
     std::function<void(const std::string&)> msg_callback;
     std::function<void()> closed_callback;
@@ -16,6 +17,8 @@ public:
 
     std::atomic_bool closed{0};
     Remote(std::unique_ptr<IEndpointWrapper> server);
+    Remote(Remote&&) = delete;
+    Remote(const Remote&) = delete;
 
     bool send(const std::string& msg) override;
 
