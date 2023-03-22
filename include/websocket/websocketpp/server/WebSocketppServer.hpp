@@ -62,7 +62,6 @@ public:
             std::cout << "Failed to open connection" << std::endl;
         });
         server.set_message_handler([this](auto hdl, const auto& msg) {
-            std::cout << "Message received: " << msg->get_payload() << std::endl;
             std::lock_guard lk(mtx);
             if(auto it = remotes_map.find(hdl.lock().get()); remotes_map.end() != it) {
                 it->second->message_received(msg->get_payload());
