@@ -1,96 +1,72 @@
 #include <cmath>
-#include <iostream>
+#include <linux/uinput.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <cstdlib>
+#include <libevdev/libevdev.h>
+#include <libevdev/libevdev-uinput.h>
 #include <thread>
-#include <array>
-#include <future>
+#include <iostream>
 #include <sstream>
-#include <optional>
-#include <iomanip>
-#include <X11/Xlib.h>
-#include <X11/extensions/XTest.h>
-
+#include <vector>
 #include <websocket/websocketpp/server/GenWSPPServer.hpp>
 
-class InputClientX11 {
-    Display *display;
-    Window root_window;
+class Input {
+    struct libevdev *dev;
+    struct libevdev_uinput *uidev;
 public:
-    InputClientX11()
-        : display(XOpenDisplay(NULL))
-        , root_window(DefaultRootWindow(display)) {}
-    ~InputClientX11() {
-        XCloseDisplay(display);
-    }
+    Input() {
+        int err;
 
-    std::optional<XEvent> query_pointer(Window& window) {
-        XEvent event;
-        if(0 == XQueryPointer(display,
-                              window,
-                              &event.xbutton.root,
-                              &event.xbutton.subwindow,
-                              &event.xbutton.x_root,
-                              &event.xbutton.y_root,
-                              &event.xbutton.x,
-                              &event.xbutton.y,
-                              &event.xbutton.state)) {
-            return {};
+        dev = libevdev_new();
+        libevdev_set_name(dev, "test device");
+        libevdev_enable_event_type(dev, EV_REL);
+        libevdev_enable_event_code(dev, EV_REL, REL_X, NULL);
+        libevdev_enable_event_code(dev, EV_REL, REL_Y, NULL);
+        libevdev_enable_event_code(dev, EV_REL, REL_WHEEL_HI_RES, NULL);
+        libevdev_enable_event_type(dev, EV_KEY);
+        libevdev_enable_event_code(dev, EV_KEY, BTN_LEFT, NULL);
+        libevdev_enable_event_code(dev, EV_KEY, BTN_MIDDLE, NULL);
+        libevdev_enable_event_code(dev, EV_KEY, BTN_RIGHT, NULL);
+
+        err = libevdev_uinput_create_from_device(dev,
+                                                 LIBEVDEV_UINPUT_OPEN_MANAGED,
+                                                 &uidev);
+        if (err != 0) {
+            std::cout << "failed to open device" << std::endl;
         }
-        return {event};
+//            return err;
+    }
+    ~Input() {
+        libevdev_uinput_destroy(uidev);
     }
 
-    std::optional<std::tuple<int, int>> get_pointer_position() {
-        if(auto event_opt = query_pointer(root_window); event_opt) {
-            auto event_btn = event_opt.value().xbutton;
-            return {std::make_tuple(event_btn.x_root, event_btn.y_root)};
+    void move_mouse(int x, int y) {
+        libevdev_uinput_write_event(uidev, EV_REL, REL_X, x);
+        libevdev_uinput_write_event(uidev, EV_REL, REL_Y, y);
+        libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
+    }
+
+    void button(int btn, bool pressed) {
+        int val = pressed ? 1 : 0;
+        switch(btn) {
+        case 1:
+            libevdev_uinput_write_event(uidev, EV_KEY, BTN_LEFT, val);
+            break;
+        case 2:
+            libevdev_uinput_write_event(uidev, EV_KEY, BTN_MIDDLE, val);
+            break;
+        case 3:
+            libevdev_uinput_write_event(uidev, EV_KEY, BTN_RIGHT, val);
+            break;
         }
-
-        std::cout << "failed onto retreive current pointer position" << std::endl;
-        return {};
-
+        libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
     }
 
-    void set_pointer_position(Display *display, Window& root, int x, int y) {
-        XWarpPointer(display, None, root, 0, 0, 0, 0, x, y);
-        XFlush(display);
-    }
-
-    void move_cursor(int x, int y) {
-        XTestFakeRelativeMotionEvent(display, x, y, 0);
-        XFlush(display);
-        return;
-        if(auto p_opt = get_pointer_position(); p_opt) {
-            auto [pos_x, pos_y] = p_opt.value();
-            set_pointer_position(display, root_window, pos_x + x, pos_y + y);
-        }
-    }
-
-    std::optional<XEvent> query_pointer_leaf_window() {
-        XEvent event;
-        event.xbutton.subwindow = root_window;
-        while (event.xbutton.subwindow) {
-            std::cout << "checking " << event.xbutton.subwindow << std::endl;
-            auto event_opt = query_pointer(event.xbutton.subwindow);
-            if(!event_opt) {
-                std::cout << "failed to query leaf event" << std::endl;
-                return {};
-            }
-            event = event_opt.value();
-        }
-        std::cout << "Window containing pointer is " << event.xbutton.window << std::endl;
-        return {event};
-    }
-
-    void button_press(int button) {
-        XTestFakeButtonEvent(display, button, True, CurrentTime);
-        XFlush(display);
-    }
-    void button_release(int button) {
-        XTestFakeButtonEvent(display, button, False, CurrentTime);
-        XFlush(display);
-    }
 };
 
-InputClientX11 input_clint;
+Input input_clint;
 
 double x{0}, y{0};
 
@@ -98,13 +74,11 @@ void mouse_move_end_apply() {
     x = y = 0;
 }
 
-using ss = std::stringstream;
-
-void mouse_move_apply(ss& s) {
+void mouse_move_apply(std::stringstream& s) {
     double x_in, y_in;
     s >> x_in >> y_in;
 
-    double exp_base = 1.00005;
+    double exp_base = 1.00002;
     x_in *= std::pow(exp_base, std::abs(x_in));
     y_in *= std::pow(exp_base, std::abs(y_in));
 
@@ -122,9 +96,8 @@ void mouse_move_apply(ss& s) {
     int x_out_int = x_out;
     int y_out_int = y_out;
 
-    input_clint.move_cursor(x_out_int, y_out_int);
+    input_clint.move_mouse(x_out_int, y_out_int);
 }
-
 
 std::unordered_map<std::string, int> btn_map{
     {"lmb", 1},
@@ -132,7 +105,7 @@ std::unordered_map<std::string, int> btn_map{
     {"rmb", 3}
 };
 
-void press_apply(ss& s) {
+void press_apply(std::stringstream& s) {
     std::string btn;
     s >> btn;
 
@@ -141,9 +114,9 @@ void press_apply(ss& s) {
         return;
     }
 
-    input_clint.button_press(btn_map[btn]);
+    input_clint.button(btn_map[btn], 1);
 }
-void release_apply(ss& s) {
+void release_apply(std::stringstream& s) {
     std::string btn;
     s >> btn;
 
@@ -152,17 +125,11 @@ void release_apply(ss& s) {
         return;
     }
 
-    input_clint.button_release(btn_map[btn]);
+    input_clint.button(btn_map[btn], 0);
 }
 
 void interpret_message(const std::string& msg) {
-    static const auto start = std::chrono::steady_clock::now();
-
-    auto since_start = std::chrono::steady_clock::now() - start;
-
-    std::cout << since_start.count()
-              << std::endl;
-    ss s(msg);
+    std::stringstream s(msg);
     std::string cmd;
     s >> cmd;
     if (0 == cmd.compare("mouse_mv")) {
@@ -189,6 +156,12 @@ int main(int argc, char* argv[]) {
 
     auto ws = gen_websocketpp_server(33333, [&](std::unique_ptr<IConnectionProvider> c){
         c->init_message_callback([](const auto& msg) {
+//            static auto last = std::chrono::steady_clock::now();
+//            auto current = std::chrono::steady_clock::now();
+//            std::cout
+//                    << std::chrono::duration<double, std::milli>(current - last).count()
+//                    << std::endl;
+//            last = current;
             interpret_message(msg);
         });
         connections.push_back(std::move(c));
@@ -201,3 +174,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
