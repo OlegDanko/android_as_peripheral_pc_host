@@ -66,7 +66,7 @@ public:
 
 };
 
-Input input_clint;
+Input input_clinent;
 
 double x{0}, y{0};
 
@@ -75,8 +75,10 @@ void mouse_move_end_apply() {
 }
 
 void mouse_move_apply(std::stringstream& s) {
-    double x_in, y_in;
+    double x_in = 0.0, y_in = 0.0;
     s >> x_in >> y_in;
+
+    std::cout << x_in << " " << y_in << std::endl;
 
     double exp_base = 1.00002;
     x_in *= std::pow(exp_base, std::abs(x_in));
@@ -96,7 +98,7 @@ void mouse_move_apply(std::stringstream& s) {
     int x_out_int = x_out;
     int y_out_int = y_out;
 
-    input_clint.move_mouse(x_out_int, y_out_int);
+    input_clinent.move_mouse(x_out_int, y_out_int);
 }
 
 std::unordered_map<std::string, int> btn_map{
@@ -114,7 +116,7 @@ void press_apply(std::stringstream& s) {
         return;
     }
 
-    input_clint.button(btn_map[btn], 1);
+    input_clinent.button(btn_map[btn], 1);
 }
 void release_apply(std::stringstream& s) {
     std::string btn;
@@ -125,30 +127,32 @@ void release_apply(std::stringstream& s) {
         return;
     }
 
-    input_clint.button(btn_map[btn], 0);
+    input_clinent.button(btn_map[btn], 0);
 }
 
 void interpret_message(const std::string& msg) {
     std::stringstream s(msg);
     std::string cmd;
-    s >> cmd;
-    if (0 == cmd.compare("mouse_mv")) {
-        mouse_move_apply(s);
+    while(!(s >> cmd).fail()) {
+        if (0 == cmd.compare("mouse_mv")) {
+            mouse_move_apply(s);
+            continue;
+        }
+        if (0 == cmd.compare("mouse_end")) {
+            mouse_move_end_apply();
+            continue;
+        }
+        if (0 == cmd.compare("press")) {
+            press_apply(s);
+            continue;
+        }
+        if (0 == cmd.compare("release")) {
+            release_apply(s);
+            continue;
+        }
+        std::cout << "Couldn't understand: " << msg << std::endl;
         return;
     }
-    if (0 == cmd.compare("mouse_end")) {
-        mouse_move_end_apply();
-        return;
-    }
-    if (0 == cmd.compare("press")) {
-        press_apply(s);
-        return;
-    }
-    if (0 == cmd.compare("release")) {
-        release_apply(s);
-        return;
-    }
-    std::cout << "Message received: " << msg << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -156,12 +160,12 @@ int main(int argc, char* argv[]) {
 
     auto ws = gen_websocketpp_server(33333, [&](std::unique_ptr<IConnectionProvider> c){
         c->init_message_callback([](const auto& msg) {
-//            static auto last = std::chrono::steady_clock::now();
-//            auto current = std::chrono::steady_clock::now();
-//            std::cout
-//                    << std::chrono::duration<double, std::milli>(current - last).count()
-//                    << std::endl;
-//            last = current;
+            static auto last = std::chrono::steady_clock::now();
+            auto current = std::chrono::steady_clock::now();
+            std::cout
+                    << std::chrono::duration<double, std::milli>(current - last).count()
+                    << std::endl;
+            last = current;
             interpret_message(msg);
         });
         connections.push_back(std::move(c));
@@ -170,6 +174,9 @@ int main(int argc, char* argv[]) {
 
     while(true) {
         std::this_thread::sleep_for(std::chrono::seconds(5));
+//        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+//        auto t = std::chrono::steady_clock::now().time_since_epoch().count() / 100000.0;
+//        input_clinent.move_mouse(std::sin(t)*10, std::cos(t)*10 );
     }
 
     return 0;
