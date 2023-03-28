@@ -7,3 +7,6 @@
 [submodule "test/deps/FakeIt"]
 	path = test/deps/FakeIt
 	url = git@github.com:eranpeer/FakeIt.git
+[submodule "deps/libevdev"]
+	path = deps/libevdev
+	url = https://gitlab.freedesktop.org/libevdev/libevdev.git
