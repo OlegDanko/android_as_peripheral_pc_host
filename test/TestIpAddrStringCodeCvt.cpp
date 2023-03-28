@@ -16,11 +16,12 @@ BOOST_AUTO_TEST_CASE(Test_unique_string_for_unique_ip)
             ip = ip4(rand(), rand(), rand(), rand(), rand());
         } while(ips.count(ip) != 0);
         ips.insert(ip);
+    }
 
+    for(auto ip : ips) {
         auto str = ip_to_str_code(ip);
         BOOST_CHECK_EQUAL(strings.count(str), 0);
         strings.insert(str);
-
         BOOST_CHECK_EQUAL(ip, str_code_to_ip(str).value());
     }
 }
