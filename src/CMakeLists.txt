@@ -3,10 +3,6 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-find_package(Boost REQUIRED COMPONENTS system)
-include_directories(${Boost_INCLUDE_DIRS})
-
 file(GLOB SRC_20
     IpCodeConversion.cpp
     ip4.cpp
@@ -30,13 +26,13 @@ set_source_files_properties(
     COMPILE_FLAGS -std=c++17 # use different C++ version, don't use -Wall
 )
 
-add_library(pc_host_lib STATIC
+add_library(phonepad_host_lib STATIC
     ${SRC_20}
     ${SRC_17}
 )
-set_property(TARGET pc_host_lib PROPERTY COMPILE_FLAGS "-Wall -pedantic")
+set_property(TARGET phonepad_host_lib PROPERTY COMPILE_FLAGS "-Wall -pedantic")
 
-target_include_directories(pc_host_lib PRIVATE
+target_include_directories(phonepad_host_lib PRIVATE
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/deps/bit_read_write/include
     ${PROJECT_SOURCE_DIR}/deps/websocketpp
