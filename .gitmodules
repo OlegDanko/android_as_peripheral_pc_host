@@ -10,3 +10,9 @@
 [submodule "deps/libevdev"]
 	path = deps/libevdev
 	url = https://gitlab.freedesktop.org/libevdev/libevdev.git
+[submodule "deps/libdatachannel"]
+	path = deps/libdatachannel
+	url = git@github.com:paullouisageneau/libdatachannel.git
+[submodule "deps/FFmpeg"]
+	path = deps/FFmpeg
+	url = git@github.com:FFmpeg/FFmpeg.git
