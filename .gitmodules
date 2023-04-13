@@ -16,3 +16,6 @@
 [submodule "deps/FFmpeg"]
 	path = deps/FFmpeg
 	url = git@github.com:FFmpeg/FFmpeg.git
+[submodule "deps/x264"]
+	path = deps/x264
+	url = https://code.videolan.org/videolan/x264.git
